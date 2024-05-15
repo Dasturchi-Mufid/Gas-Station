@@ -9,37 +9,40 @@ from . import serializers
 from . import permission
 
 @api_view(['GET'])
-def gas_type_list(request):
-    gas_types = models.GasType.objects.all()
-    serializer = serializers.GasTypeSerializer(gas_types, many=True)
+def station_list(request):
+    station_list = models.GasStation.objects.all()
+    serializer = serializers.GasStationSerializer(station_list, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def gas_type_create(request):
-    serializer = serializers.GasTypeSerializer(data=request.data)
+def station_create(request):
+    serializer = serializers.GasStationSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
+        serializer.save(owner=request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
-def gas_type_detail(request, pk):
-    gas_type = get_object_or_404(models.GasType, id=pk)
-    serializer = serializers.GasTypeSerializer(gas_type)
+def station_detail(request, pk):
+    try:
+        station = models.GasStation.objects.get(id=pk)
+    except models.GasStation.DoesNotExist:
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+    serializer = serializers.GasStationSerializer(station)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['PATCH', 'PUT'])
 @permission_classes([IsAuthenticated, permission.OwnerPermission])
-def gas_type_update(request, pk):
-    gas_type = get_object_or_404(models.GasType, id=pk)
-    station = gas_type.station
-
+def station_update(request, id):
+    try:
+        station = models.GasStation.objects.get(id=id)
+    except models.GasStation.DoesNotExist:
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
     if not permission.OwnerPermission().has_object_permission(request, None, station):
         return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
-
     partial = request.method == 'PATCH'
-    serializer = serializers.GasTypeSerializer(gas_type, data=request.data, partial=partial)
+    serializer = serializers.GasStationSerializer(station, data=request.data, partial=partial)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data)
@@ -47,21 +50,30 @@ def gas_type_update(request, pk):
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated, permission.OwnerPermission])
-def gas_type_delete(request, pk):
-    gas_type = get_object_or_404(models.GasType, id=pk)
-    station = gas_type.station
-
+def station_delete(request, id):
+    try:
+        station = models.GasStation.objects.get(id=id)
+    except models.GasStation.DoesNotExist:
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
     if not permission.OwnerPermission().has_object_permission(request, None, station):
         return Response({"detail": "Permission denied."}, status=status.HTTP_403_FORBIDDEN)
-
-    gas_type.delete()
+    station.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET'])
+def station_search(request):
+    query = request.query_params.get('q', None)
+    if query is not None:
+        stations = models.GasStation.objects.filter(name__icontains=query)
+        serializer = serializers.GasStationSerializer(stations, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response({"detail": "Query parameter 'q' is required."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
-def station_image_list(request):
-    station_images = models.StationImage.objects.all()
-    serializer = serializers.StationImageSerializer(station_images, many=True)
+def gas_type_list(request):
+    gas_types = models.GasType.objects.all()
+    serializer = serializers.GasTypeSerializer(gas_types, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
@@ -72,12 +84,6 @@ def station_image_create(request):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET'])
-def station_image_detail(request, pk):
-    station_image = get_object_or_404(models.StationImage, id=pk)
-    serializer = serializers.StationImageSerializer(station_image)
-    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['PATCH', 'PUT'])
 @permission_classes([IsAuthenticated, permission.OwnerPermission])
