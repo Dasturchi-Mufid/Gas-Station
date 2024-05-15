@@ -24,9 +24,9 @@ def station_create(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
-def station_detail(request, pk):
+def station_detail(request, code):
     try:
-        station = models.GasStation.objects.get(id=pk)
+        station = models.GasStation.objects.get(code=code)
     except models.GasStation.DoesNotExist:
         return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
     serializer = serializers.GasStationSerializer(station)
@@ -34,9 +34,9 @@ def station_detail(request, pk):
 
 @api_view(['PATCH', 'PUT'])
 @permission_classes([IsAuthenticated, permission.OwnerPermission])
-def station_update(request, id):
+def station_update(request, code):
     try:
-        station = models.GasStation.objects.get(id=id)
+        station = models.GasStation.objects.get(code=code)
     except models.GasStation.DoesNotExist:
         return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
     if not permission.OwnerPermission().has_object_permission(request, None, station):
@@ -50,9 +50,9 @@ def station_update(request, id):
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated, permission.OwnerPermission])
-def station_delete(request, id):
+def station_delete(request, code):
     try:
-        station = models.GasStation.objects.get(id=id)
+        station = models.GasStation.objects.get(code=code)
     except models.GasStation.DoesNotExist:
         return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
     if not permission.OwnerPermission().has_object_permission(request, None, station):
@@ -87,8 +87,8 @@ def station_image_create(request):
 
 @api_view(['PATCH', 'PUT'])
 @permission_classes([IsAuthenticated, permission.OwnerPermission])
-def station_image_update(request, pk):
-    station_image = get_object_or_404(models.StationImage, id=pk)
+def station_image_update(request, code):
+    station_image = get_object_or_404(models.StationImage, code=code)
     station = station_image.station
 
     if not permission.OwnerPermission().has_object_permission(request, None, station):
@@ -103,8 +103,8 @@ def station_image_update(request, pk):
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated, permission.OwnerPermission])
-def station_image_delete(request, pk):
-    station_image = get_object_or_404(models.StationImage, id=pk)
+def station_image_delete(request, code):
+    station_image = get_object_or_404(models.StationImage, code=code)
     station = station_image.station
 
     if not permission.OwnerPermission().has_object_permission(request, None, station):
@@ -115,16 +115,16 @@ def station_image_delete(request, pk):
 
 
 @api_view(['GET'])
-def station_images_for_station(request, station_id):
-    station = get_object_or_404(models.GasStation, id=station_id)
+def station_images_for_station(request, station_code):
+    station = get_object_or_404(models.GasStation, code=station_code)
     station_images = models.StationImage.objects.filter(station=station)
     serializer = serializers.StationImageSerializer(station_images, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
-def gas_types_for_station(request, station_id):
-    station = get_object_or_404(models.GasStation, id=station_id)
+def gas_types_for_station(request, station_code):
+    station = get_object_or_404(models.GasStation, code=station_code)
     gas_types = models.GasType.objects.filter(station=station)
     serializer = serializers.GasTypeSerializer(gas_types, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
